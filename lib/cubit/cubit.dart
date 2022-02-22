@@ -82,8 +82,8 @@ class AppCubit extends Cubit<AppStates> {
           .then((value) {
         print('$value inserted successfully');
 
-        // noteImage = null;
         getUsersFromDatabase(database);
+        userImage = null;
       }).catchError((error) {
         print('Error When Inserting New Record ${error.toString()}');
       });
@@ -103,11 +103,26 @@ class AppCubit extends Cubit<AppStates> {
           .then((value) {
         print('$value inserted successfully');
 
-        // noteImage = null;
         getNotesFromDatabase(database);
       }).catchError((error) {
         print('Error When Inserting New Record ${error.toString()}');
       });
+    });
+  }
+
+  List<UserModel> allUsers = [];
+
+  void getUsers() async {
+    allUsers.clear();
+    await DioHelper.getData(
+      url: getAllUsers,
+    ).then((value) {
+      value.data.forEach((element) {
+        allUsers.add(UserModel.fromJson(element));
+      });
+      emit(AppGetAllUsersState());
+    }).catchError((e) {
+      print(e);
     });
   }
 
@@ -127,43 +142,6 @@ class AppCubit extends Cubit<AppStates> {
     });
   }
 
-  Future<int> addNewNotes({
-    required String text,
-  }) async {
-    int code = 0;
-    await DioHelper.postData(
-      url: insertNote,
-      data: {
-        "Text": text,
-        "PlaceDateTime": DateTime.now().toIso8601String(),
-      },
-    ).then((value) {
-      print(value);
-      getNotesFromServer();
-      code = 200;
-    }).catchError((e){
-      print(e);
-      code = 400;
-    });
-    return code;
-  }
-
-  List<UserModel> allUsers = [];
-
-  void getUsers() async {
-    allUsers.clear();
-    await DioHelper.getData(
-      url: getAllUsers,
-    ).then((value) {
-      value.data.forEach((element) {
-        allUsers.add(UserModel.fromJson(element));
-      });
-      emit(AppGetAllUsersState());
-    }).catchError((e) {
-      print(e);
-    });
-  }
-
   var picker = ImagePicker();
 
   File? userImage;
@@ -177,7 +155,6 @@ class AppCubit extends Cubit<AppStates> {
       userImage = File(pickedFile.path);
       emit(AppGetPictureState());
     } else {
-      print('No image selected.');
       emit(AppGetPictureState());
     }
   }
@@ -198,8 +175,28 @@ class AppCubit extends Cubit<AppStates> {
         "IntrestId": "1",
       },
     ).then((value) {
-      print(value);
       getUsers();
+      userImage = null;
+      code = 200;
+    }).catchError((e){
+      print(e);
+      code = 400;
+    });
+    return code;
+  }
+
+  Future<int> addNewNotes({
+    required String text,
+  }) async {
+    int code = 0;
+    await DioHelper.postData(
+      url: insertNote,
+      data: {
+        "Text": text,
+        "PlaceDateTime": DateTime.now().toIso8601String(),
+      },
+    ).then((value) {
+      getNotesFromServer();
       code = 200;
     }).catchError((e){
       print(e);
